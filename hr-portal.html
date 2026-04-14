@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HR Portal</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #2563eb;
+    --primary-light: #eff6ff;
+    --primary-dark: #1d4ed8;
+    --success: #16a34a;
+    --success-light: #f0fdf4;
+    --warning: #d97706;
+    --warning-light: #fffbeb;
+    --danger: #dc2626;
+    --danger-light: #fef2f2;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-700: #374151;
+    --gray-900: #111827;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--gray-50); color: var(--gray-900); min-height: 100vh; font-size: 14px; }
+
+  /* LOGIN */
+  #loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1rem; }
+  .login-card { background: #fff; border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.1); }
+  .login-logo { width: 56px; height: 56px; background: var(--primary); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; font-weight: 700; margin: 0 auto 1.5rem; }
+  .login-card h1 { text-align: center; font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .login-card p { text-align: center; color: var(--gray-500); margin-bottom: 2rem; font-size: 13px; }
+  .form-group { margin-bottom: 1rem; }
+  .form-group label { display: block; font-size: 13px; font-weight: 500; color: var(--gray-700); margin-bottom: 6px; }
+  .form-group input { width: 100%; padding: 10px 14px; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-size: 14px; outline: none; transition: border 0.2s; }
+  .form-group input:focus { border-color: var(--primary); }
+  .btn-primary { width: 100%; padding: 11px; background: var(--primary); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 0.5rem; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-primary:disabled { opacity: 0.6; cursor: default; }
+  .login-error { background: var(--danger-light); color: var(--danger); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; margin-top: 1rem; display: none; }
+  .login-hint { background: var(--primary-light); color: var(--primary); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 12px; margin-top: 1rem; line-height: 1.6; }
+
+  /* PORTAL */
+  #portalScreen { display: none; }
+  .topbar { background: #fff; border-bottom: 1px solid var(--gray-200); padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .topbar-logo { width: 32px; height: 32px; background: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 700; }
+  .topbar-title { font-size: 15px; font-weight: 600; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .emp-pill { background: var(--gray-100); border-radius: 99px; padding: 5px 12px; font-size: 13px; color: var(--gray-700); font-weight: 500; }
+  .logout-btn { font-size: 13px; color: var(--gray-500); cursor: pointer; background: none; border: none; padding: 4px 8px; border-radius: var(--radius-sm); }
+  .logout-btn:hover { background: var(--gray-100); }
+
+  .nav { display: flex; gap: 2px; background: #fff; border-bottom: 1px solid var(--gray-200); padding: 0 1.5rem; overflow-x: auto; }
+  .nav-btn { padding: 12px 16px; font-size: 13px; font-weight: 500; color: var(--gray-500); border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+  .nav-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .nav-btn:hover:not(.active) { color: var(--gray-900); }
+
+  .content { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem; }
+
+  /* LOADING */
+  .loading-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem; gap: 12px; color: var(--gray-500); font-size: 13px; }
+  .spinner { width: 28px; height: 28px; border: 3px solid var(--gray-200); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .stat-card { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 1rem 1.25rem; }
+  .stat-label { font-size: 12px; color: var(--gray-500); margin-bottom: 6px; }
+  .stat-value { font-size: 26px; font-weight: 600; color: var(--gray-900); }
+  .stat-sub { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+  .stat-card.blue .stat-value { color: var(--primary); }
+  .stat-card.green .stat-value { color: var(--success); }
+  .stat-card.orange .stat-value { color: var(--warning); }
+  .stat-card.red .stat-value { color: var(--danger); }
+
+  /* CARDS */
+  .card { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+  .card-title { font-size: 14px; font-weight: 600; color: var(--gray-700); margin-bottom: 1rem; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-weight: 500; color: var(--gray-500); padding: 8px 10px; border-bottom: 1px solid var(--gray-200); font-size: 12px; }
+  td { padding: 10px; border-bottom: 1px solid var(--gray-100); color: var(--gray-900); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--gray-50); }
+
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 500; }
+  .badge-green { background: var(--success-light); color: var(--success); }
+  .badge-orange { background: var(--warning-light); color: var(--warning); }
+  .badge-red { background: var(--danger-light); color: var(--danger); }
+  .badge-gray { background: var(--gray-100); color: var(--gray-500); }
+  .badge-blue { background: var(--primary-light); color: var(--primary); }
+
+  /* LEAVE BAR */
+  .leave-bar-wrap { margin-top: 4px; }
+  .leave-bar-bg { height: 5px; background: var(--gray-100); border-radius: 99px; overflow: hidden; }
+  .leave-bar-fill { height: 100%; border-radius: 99px; }
+
+  /* POLICIES */
+  .policy-list { display: flex; flex-direction: column; gap: 8px; }
+  .policy-item { border: 1px solid var(--gray-200); border-radius: var(--radius); overflow: hidden; background: #fff; }
+  .policy-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; cursor: pointer; }
+  .policy-header:hover { background: var(--gray-50); }
+  .policy-name { font-size: 14px; font-weight: 500; }
+  .policy-meta { display: flex; align-items: center; gap: 8px; }
+  .policy-body { display: none; padding: 14px 16px; border-top: 1px solid var(--gray-100); font-size: 13px; color: var(--gray-500); line-height: 1.8; background: var(--gray-50); }
+  .policy-item.open .policy-body { display: block; }
+  .chevron { font-size: 10px; color: var(--gray-400); transition: transform 0.2s; }
+  .policy-item.open .chevron { transform: rotate(180deg); }
+
+  /* CHATBOT */
+  .chat-container { display: flex; flex-direction: column; border: 1px solid var(--gray-200); border-radius: var(--radius); overflow: hidden; background: #fff; height: 520px; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 12px; }
+  .msg { max-width: 78%; }
+  .msg.user { align-self: flex-end; }
+  .msg.bot { align-self: flex-start; }
+  .msg-bubble { padding: 10px 14px; font-size: 13px; line-height: 1.7; }
+  .msg.user .msg-bubble { background: var(--primary); color: #fff; border-radius: 16px 16px 4px 16px; }
+  .msg.bot .msg-bubble { background: var(--gray-100); color: var(--gray-900); border-radius: 16px 16px 16px 4px; }
+  .msg-time { font-size: 11px; color: var(--gray-400); padding: 3px 4px; }
+  .msg.user .msg-time { text-align: right; }
+  .quick-questions { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--gray-100); }
+  .quick-q { font-size: 12px; padding: 5px 11px; border-radius: 99px; border: 1px solid var(--gray-200); background: #fff; color: var(--gray-700); cursor: pointer; }
+  .quick-q:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+  .chat-input-area { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--gray-200); }
+  .chat-input-area input { flex: 1; padding: 9px 13px; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-size: 13px; outline: none; }
+  .chat-input-area input:focus { border-color: var(--primary); }
+  .chat-send-btn { padding: 9px 18px; background: var(--primary); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; }
+  .chat-send-btn:disabled { opacity: 0.5; cursor: default; }
+  .typing-dots { display: flex; gap: 4px; align-items: center; padding: 4px 2px; }
+  .dot { width: 6px; height: 6px; background: var(--gray-400); border-radius: 50%; animation: bounce 1s ease infinite; }
+  .dot:nth-child(2) { animation-delay: 0.15s; }
+  .dot:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
+
+  /* SETUP BANNER */
+  .setup-banner { background: var(--warning-light); border: 1px solid #fcd34d; border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem; font-size: 13px; line-height: 1.7; color: var(--gray-700); }
+  .setup-banner strong { color: var(--warning); }
+  .setup-banner code { background: rgba(0,0,0,0.06); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     STEP 1: PASTE YOUR GOOGLE SHEETS URL BELOW
+     Instructions at the bottom of this file
+════════════════════════════════════════════════════════════════ -->
+<script>
+const SHEETS_CONFIG = {
+  // Paste your Google Sheet Published CSV URLs here
+  // See setup instructions at the bottom of this file
+  employees:  "YOUR_EMPLOYEES_SHEET_CSV_URL",
+  leaves:     "YOUR_LEAVES_SHEET_CSV_URL",
+  attendance: "YOUR_ATTENDANCE_SHEET_CSV_URL",
+  policies:   "YOUR_POLICIES_SHEET_CSV_URL",
+
+};
+
+// ══════════════════════════════════════════════════════════════
+// SAMPLE DATA (used when Google Sheets URLs are not configured)
+// ══════════════════════════════════════════════════════════════
+const SAMPLE_EMPLOYEES = [
+  { id: "E001", name: "Ali Hassan",   dept: "Engineering", joined: "March 2022",   pin: "1234" },
+  { id: "E002", name: "Sara Khan",    dept: "Marketing",   joined: "June 2021",    pin: "2345" },
+  { id: "E003", name: "Usman Raza",   dept: "Operations",  joined: "January 2023", pin: "3456" },
+  { id: "E004", name: "Ayesha Malik", dept: "Finance",     joined: "July 2020",    pin: "4567" },
+];
+const SAMPLE_LEAVES = [
+  { empId: "E001", type: "Annual",  entitled: 20, taken: 8  },
+  { empId: "E001", type: "Sick",    entitled: 10, taken: 3  },
+  { empId: "E001", type: "Casual",  entitled: 5,  taken: 2  },
+  { empId: "E001", type: "Annual",  history: true, from: "Jan 15", to: "Jan 17", days: 3, status: "Approved" },
+  { empId: "E001", type: "Sick",    history: true, from: "Feb 3",  to: "Feb 4",  days: 2, status: "Approved" },
+  { empId: "E001", type: "Annual",  history: true, from: "Apr 20", to: "Apr 23", days: 4, status: "Pending"  },
+  { empId: "E002", type: "Annual",  entitled: 20, taken: 14 },
+  { empId: "E002", type: "Sick",    entitled: 10, taken: 6  },
+  { empId: "E002", type: "Casual",  entitled: 5,  taken: 5  },
+  { empId: "E002", type: "Annual",  history: true, from: "Jan 5",  to: "Jan 7",  days: 3, status: "Approved" },
+  { empId: "E002", type: "Sick",    history: true, from: "Mar 1",  to: "Mar 2",  days: 2, status: "Approved" },
+  { empId: "E003", type: "Annual",  entitled: 20, taken: 2  },
+  { empId: "E003", type: "Sick",    entitled: 10, taken: 1  },
+  { empId: "E003", type: "Casual",  entitled: 5,  taken: 1  },
+  { empId: "E003", type: "Annual",  history: true, from: "Mar 25", to: "Mar 26", days: 2, status: "Approved" },
+  { empId: "E003", type: "Annual",  history: true, from: "Apr 18", to: "Apr 20", days: 3, status: "Pending"  },
+  { empId: "E004", type: "Annual",  entitled: 20, taken: 5  },
+  { empId: "E004", type: "Sick",    entitled: 10, taken: 0  },
+  { empId: "E004", type: "Casual",  entitled: 5,  taken: 3  },
+];
+const SAMPLE_ATTENDANCE = [
+  { empId: "E001", date: "Apr 1",  checkin: "9:22 AM", delay: 22, note: "Traffic"  },
+  { empId: "E001", date: "Apr 3",  checkin: "9:05 AM", delay:  5, note: "On time"  },
+  { empId: "E001", date: "Apr 7",  checkin: "9:45 AM", delay: 45, note: "Personal" },
+  { empId: "E001", date: "Apr 8",  checkin: "9:00 AM", delay:  0, note: "On time"  },
+  { empId: "E001", date: "Apr 10", checkin: "9:15 AM", delay: 15, note: "Medical"  },
+  { empId: "E001", date: "Apr 14", checkin: "9:02 AM", delay:  2, note: "On time"  },
+  { empId: "E002", date: "Apr 1",  checkin: "9:00 AM", delay:  0, note: "On time"  },
+  { empId: "E002", date: "Apr 3",  checkin: "9:33 AM", delay: 33, note: "Traffic"  },
+  { empId: "E002", date: "Apr 7",  checkin: "9:10 AM", delay: 10, note: "Delay"    },
+  { empId: "E002", date: "Apr 8",  checkin: "9:55 AM", delay: 55, note: "Overslept"},
+  { empId: "E002", date: "Apr 10", checkin: "9:00 AM", delay:  0, note: "On time"  },
+  { empId: "E002", date: "Apr 14", checkin: "9:20 AM", delay: 20, note: "Transport"},
+  { empId: "E003", date: "Apr 1",  checkin: "9:05 AM", delay:  5, note: "On time"  },
+  { empId: "E003", date: "Apr 3",  checkin: "9:00 AM", delay:  0, note: "On time"  },
+  { empId: "E003", date: "Apr 7",  checkin: "9:12 AM", delay: 12, note: "Delay"    },
+  { empId: "E003", date: "Apr 14", checkin: "9:35 AM", delay: 35, note: "Car issue"},
+  { empId: "E004", date: "Apr 1",  checkin: "9:00 AM", delay:  0, note: "On time"  },
+  { empId: "E004", date: "Apr 3",  checkin: "9:08 AM", delay:  8, note: "Minor"    },
+  { empId: "E004", date: "Apr 7",  checkin: "9:00 AM", delay:  0, note: "On time"  },
+  { empId: "E004", date: "Apr 14", checkin: "9:11 AM", delay: 11, note: "Delay"    },
+];
+const SAMPLE_POLICIES = [
+  { name: "Annual Leave Policy", category: "Leave", content: "Employees are entitled to 20 days of paid annual leave per calendar year. Leave must be applied for at least 3 working days in advance. Unused leave (up to 10 days) may be carried forward to the next year. Encashment of unused leave is allowed at year-end subject to manager approval." },
+  { name: "Sick Leave Policy",   category: "Leave", content: "Employees are entitled to 10 days of paid sick leave per year. A medical certificate is required for absences exceeding 2 consecutive days. Sick leave cannot be carried forward or encashed." },
+  { name: "Late Arrival & Attendance Policy", category: "Attendance", content: "Official hours are 9:00 AM – 6:00 PM. A grace period of 5 minutes is allowed. Arriving more than 5 minutes late is recorded as a late arrival. More than 3 late arrivals in a month may result in a formal warning." },
+  { name: "Work From Home Policy", category: "Remote Work", content: "Employees may work from home up to 2 days per week with prior manager approval. WFH requests must be submitted by Thursday for the following week. Employees must be reachable during core hours 10 AM – 4 PM. WFH is not available during probation." },
+  { name: "Code of Conduct",    category: "General",    content: "All employees must maintain professional behaviour at all times — respectful communication, timely reporting, protecting company data, and avoiding conflicts of interest. Violations must be reported to HR." },
+  { name: "Probation Policy",   category: "General",    content: "New employees serve a 3-month probation period. During probation, employees are not eligible for WFH or leave encashment. Probation may be extended by 1 month if performance targets are not met." },
+  { name: "Grievance Policy",   category: "HR",         content: "Employees may raise workplace grievances through the HR helpdesk. All grievances are confidential. HR will acknowledge within 2 working days and resolve within 10 working days." },
+];
+
+// ══════════════════════════════════════════════════════════════
+// APP STATE
+// ══════════════════════════════════════════════════════════════
+let appData = { employees: [], leaves: [], attendance: [], policies: [] };
+let currentEmployee = null;
+let chatHistory = [];
+const usingSheets = () => SHEETS_CONFIG.employees !== "YOUR_EMPLOYEES_SHEET_CSV_URL";
+
+// ══════════════════════════════════════════════════════════════
+// GOOGLE SHEETS CSV PARSER
+// ══════════════════════════════════════════════════════════════
+async function fetchCSV(url) {
+  const res = await fetch(url);
+  const text = await res.text();
+  const lines = text.trim().split("\n");
+  const headers = lines[0].split(",").map(h => h.trim().replace(/"/g, ""));
+  return lines.slice(1).map(line => {
+    const vals = line.split(",").map(v => v.trim().replace(/"/g, ""));
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = vals[i] || "");
+    return obj;
+  });
+}
+
+async function loadData() {
+  if (!usingSheets()) {
+    appData = {
+      employees:  SAMPLE_EMPLOYEES,
+      leaves:     SAMPLE_LEAVES,
+      attendance: SAMPLE_ATTENDANCE,
+      policies:   SAMPLE_POLICIES
+    };
+    return;
+  }
+  try {
+    const [e, l, a, p] = await Promise.all([
+      fetchCSV(SHEETS_CONFIG.employees),
+      fetchCSV(SHEETS_CONFIG.leaves),
+      fetchCSV(SHEETS_CONFIG.attendance),
+      fetchCSV(SHEETS_CONFIG.policies)
+    ]);
+    appData.employees  = e.map(r => ({ id: r.ID, name: r.Name, dept: r.Department, joined: r.Joined, pin: r.PIN }));
+    appData.leaves     = l.map(r => ({
+      empId: r.EmployeeID, type: r.Type,
+      entitled: r.Entitled ? parseInt(r.Entitled) : undefined,
+      taken:    r.Taken    ? parseInt(r.Taken)    : undefined,
+      history:  r.IsHistory === "true",
+      from: r.From, to: r.To, days: parseInt(r.Days)||0, status: r.Status
+    }));
+    appData.attendance = a.map(r => ({ empId: r.EmployeeID, date: r.Date, checkin: r.CheckIn, delay: parseInt(r.Delay)||0, note: r.Note }));
+    appData.policies   = p.map(r => ({ name: r.Name, category: r.Category, content: r.Content }));
+  } catch(e) {
+    console.error("Sheets load error:", e);
+    appData = { employees: SAMPLE_EMPLOYEES, leaves: SAMPLE_LEAVES, attendance: SAMPLE_ATTENDANCE, policies: SAMPLE_POLICIES };
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════════════════════════════
+async function handleLogin() {
+  const empId = document.getElementById("loginId").value.trim().toUpperCase();
+  const pin   = document.getElementById("loginPin").value.trim();
+  const btn   = document.getElementById("loginBtn");
+  const err   = document.getElementById("loginError");
+  err.style.display = "none";
+  btn.disabled = true;
+  btn.textContent = "Signing in…";
+  await loadData();
+  const emp = appData.employees.find(e => e.id === empId && e.pin === pin);
+  if (!emp) {
+    err.textContent = "Employee ID or PIN is incorrect. Please try again.";
+    err.style.display = "block";
+    btn.disabled = false;
+    btn.textContent = "Sign In";
+    return;
+  }
+  currentEmployee = emp;
+  chatHistory = [];
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("portalScreen").style.display = "block";
+  document.getElementById("empPill").textContent = emp.name + " · " + emp.dept;
+  showTab("dashboard");
+}
+
+function logout() {
+  currentEmployee = null;
+  document.getElementById("loginId").value = "";
+  document.getElementById("loginPin").value = "";
+  document.getElementById("loginScreen").style.display = "flex";
+  document.getElementById("portalScreen").style.display = "none";
+}
+
+// ══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════════
+function showTab(tab) {
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  document.querySelectorAll(".tab-panel").forEach(p => p.style.display = "none");
+  document.getElementById("tab-" + tab).style.display = "block";
+  if (tab === "dashboard")  renderDashboard();
+  if (tab === "leaves")     renderLeaves();
+  if (tab === "attendance") renderAttendance();
+  if (tab === "policies")   renderPolicies();
+  if (tab === "chat")       renderChat();
+}
+
+// ══════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════
+const badge = (text, cls) => `<span class="badge badge-${cls}">${text}</span>`;
+function statusBadge(s) {
+  return s === "Approved" ? badge(s,"green") : s === "Pending" ? badge(s,"orange") : s === "Rejected" ? badge(s,"red") : badge(s,"gray");
+}
+function lateBadge(d) {
+  return d === 0 ? badge("On time","green") : d <= 10 ? badge("Minor","gray") : d <= 30 ? badge("Late","orange") : badge("Very late","red");
+}
+function leaveColor(pct) {
+  return pct > 0.5 ? "#16a34a" : pct > 0.2 ? "#d97706" : "#dc2626";
+}
+function myLeaves()     { return appData.leaves.filter(l => l.empId === currentEmployee.id && !l.history); }
+function myLeaveHist()  { return appData.leaves.filter(l => l.empId === currentEmployee.id && l.history); }
+function myAttendance() { return appData.attendance.filter(a => a.empId === currentEmployee.id); }
+
+// ══════════════════════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════════════════════
+function renderDashboard() {
+  const leaves = myLeaves();
+  const att    = myAttendance();
+  const lateCount = att.filter(a => a.delay > 5).length;
+  const totalRem  = leaves.reduce((s,l) => s + ((l.entitled||0) - (l.taken||0)), 0);
+  const pending   = myLeaveHist().filter(l => l.status === "Pending").length;
+
+  document.getElementById("dashStats").innerHTML = `
+    <div class="stat-card blue"><div class="stat-label">Leave remaining</div><div class="stat-value">${totalRem}</div><div class="stat-sub">days this year</div></div>
+    <div class="stat-card ${lateCount >= 3 ? "red" : "green"}"><div class="stat-label">Late arrivals</div><div class="stat-value">${lateCount}</div><div class="stat-sub">this month</div></div>
+    <div class="stat-card ${pending > 0 ? "orange" : ""}"><div class="stat-label">Pending requests</div><div class="stat-value">${pending}</div><div class="stat-sub">awaiting approval</div></div>
+    <div class="stat-card"><div class="stat-label">Department</div><div class="stat-value" style="font-size:16px;padding-top:4px;">${currentEmployee.dept}</div><div class="stat-sub">Since ${currentEmployee.joined}</div></div>
+  `;
+
+  const leaveRows = leaves.map(l => {
+    const rem = (l.entitled||0) - (l.taken||0);
+    const pct = l.entitled > 0 ? rem / l.entitled : 0;
+    return `<tr><td>${l.type}</td><td>
+      <div>${rem} / ${l.entitled} days</div>
+      <div class="leave-bar-wrap"><div class="leave-bar-bg"><div class="leave-bar-fill" style="width:${Math.round(pct*100)}%;background:${leaveColor(pct)};"></div></div></div>
+    </td></tr>`;
+  }).join("");
+
+  const attRows = att.slice(-5).map(a =>
+    `<tr><td>${a.date}</td><td>${a.checkin}</td><td>${lateBadge(a.delay)}</td></tr>`
+  ).join("");
+
+  document.getElementById("dashContent").innerHTML = `
+    <div class="two-col">
+      <div class="card"><div class="card-title">Leave summary</div><div class="table-wrap"><table><thead><tr><th>Type</th><th>Balance</th></tr></thead><tbody>${leaveRows}</tbody></table></div></div>
+      <div class="card"><div class="card-title">Recent attendance</div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Check-in</th><th>Status</th></tr></thead><tbody>${attRows}</tbody></table></div></div>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════════════════════
+// LEAVES
+// ══════════════════════════════════════════════════════════════
+function renderLeaves() {
+  const leaves = myLeaves();
+  const hist   = myLeaveHist();
+
+  const balRows = leaves.map(l => {
+    const rem = (l.entitled||0) - (l.taken||0);
+    const pct = l.entitled > 0 ? rem / l.entitled : 0;
+    const cls = pct > 0.5 ? "badge-green" : pct > 0.2 ? "badge-orange" : "badge-red";
+    return `<tr><td>${l.type}</td><td>${l.entitled}</td><td>${l.taken}</td><td><strong>${rem}</strong></td><td><span class="badge ${cls}">${rem > 0 ? rem + " left" : "Exhausted"}</span></td></tr>`;
+  }).join("");
+
+  const histRows = hist.length
+    ? hist.map(l => `<tr><td>${l.from}</td><td>${l.to}</td><td>${l.type}</td><td>${l.days}</td><td>${statusBadge(l.status)}</td></tr>`).join("")
+    : `<tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:1.5rem;">No leave history found</td></tr>`;
+
+  document.getElementById("leavesContent").innerHTML = `
+    <div class="card">
+      <div class="card-title">Leave balance</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Type</th><th>Entitled</th><th>Taken</th><th>Remaining</th><th>Status</th></tr></thead>
+        <tbody>${balRows}</tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Leave history</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>From</th><th>To</th><th>Type</th><th>Days</th><th>Status</th></tr></thead>
+        <tbody>${histRows}</tbody>
+      </table></div>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════════════════════
+// ATTENDANCE
+// ══════════════════════════════════════════════════════════════
+function renderAttendance() {
+  const att = myAttendance();
+  const lateOnes = att.filter(a => a.delay > 5);
+  const onTime   = att.filter(a => a.delay <= 5);
+  const avgDelay = att.length ? Math.round(att.reduce((s,a)=>s+a.delay,0)/att.length) : 0;
+
+  const rows = att.map(a =>
+    `<tr><td>${a.date}</td><td>${a.checkin}</td><td>9:00 AM</td><td>${a.delay === 0 ? "—" : "+" + a.delay + " min"}</td><td>${lateBadge(a.delay)}</td><td style="color:var(--gray-400);font-size:12px;">${a.note}</td></tr>`
+  ).join("");
+
+  const warn = lateOnes.length >= 3
+    ? `<div style="background:var(--danger-light);border:1px solid #fca5a5;border-radius:var(--radius);padding:12px 16px;margin-bottom:1rem;font-size:13px;color:var(--danger);">
+        <strong>Attention:</strong> You have ${lateOnes.length} late arrivals this month. The policy allows a maximum of 3 before a formal warning is issued.
+       </div>` : "";
+
+  document.getElementById("attendanceContent").innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Days logged</div><div class="stat-value">${att.length}</div></div>
+      <div class="stat-card ${lateOnes.length >= 3 ? "red" : "green"}"><div class="stat-label">Late arrivals</div><div class="stat-value">${lateOnes.length}</div><div class="stat-sub">&gt;5 min late</div></div>
+      <div class="stat-card green"><div class="stat-label">On time</div><div class="stat-value">${onTime.length}</div></div>
+      <div class="stat-card"><div class="stat-label">Avg delay</div><div class="stat-value">${avgDelay}<span style="font-size:14px;font-weight:400;"> min</span></div></div>
+    </div>
+    ${warn}
+    <div class="card">
+      <div class="card-title">Attendance log</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Date</th><th>Check-in</th><th>Expected</th><th>Delay</th><th>Status</th><th>Note</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════════════════════
+// POLICIES
+// ══════════════════════════════════════════════════════════════
+function renderPolicies() {
+  const catColors = { "Leave":"blue", "Attendance":"orange", "Remote Work":"green", "General":"gray", "HR":"blue" };
+  const items = appData.policies.map((p, i) => `
+    <div class="policy-item" id="pol-${i}">
+      <div class="policy-header" onclick="togglePol(${i})">
+        <span class="policy-name">${p.name}</span>
+        <span class="policy-meta">
+          <span class="badge badge-${catColors[p.category]||"gray"}">${p.category}</span>
+          <span class="chevron">▼</span>
+        </span>
+      </div>
+      <div class="policy-body">${p.content}</div>
+    </div>`).join("");
+  document.getElementById("policiesContent").innerHTML = `<div class="policy-list">${items}</div>`;
+}
+function togglePol(i) { document.getElementById("pol-" + i).classList.toggle("open"); }
+
+// ══════════════════════════════════════════════════════════════
+// CHAT
+// ══════════════════════════════════════════════════════════════
+// FREE RULE-BASED CHATBOT
+// ══════════════════════════════════════════════════════════════
+function renderChat() {
+  const qqs = [
+    "How many casual leaves do I have?",
+    "How many sick leaves do I have?",
+    "How many WFH days do I have?",
+    "What is the late arrival policy?",
+    "How do I apply for leave?",
+    "What is the WFH policy?",
+    "What happens after 3 late arrivals?",
+    "Tell me about the health insurance",
+    "What is the performance bonus?"
+  ];
+  document.getElementById("quickQs").innerHTML = qqs.map(q =>
+    `<button class="quick-q" onclick="askQuick('${q}')">${q}</button>`
+  ).join("");
+  if (chatHistory.length === 0) {
+    addBotMsg(`Hi ${currentEmployee.name.split(" ")[0]}! 👋 I'm your HR assistant. I can answer questions about your leaves, attendance, policies, WFH, and more.\n\nJust type your question or tap one of the quick buttons below!`);
+  }
+}
+
+function askQuick(q) {
+  document.getElementById("chatInput").value = q;
+  sendMessage();
+}
+
+function addUserMsg(text) {
+  const msgs = document.getElementById("chatMessages");
+  const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  msgs.innerHTML += `<div class="msg user"><div class="msg-bubble">${text}</div><div class="msg-time">${now}</div></div>`;
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addBotMsg(text) {
+  const msgs = document.getElementById("chatMessages");
+  const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  msgs.innerHTML += `<div class="msg bot"><div class="msg-bubble">${text.replace(/\n/g,"<br>")}</div><div class="msg-time">${now}</div></div>`;
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  document.getElementById("chatMessages").innerHTML +=
+    `<div class="msg bot" id="typing"><div class="msg-bubble"><div class="typing-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></div>`;
+  document.getElementById("chatMessages").scrollTop = 9999;
+}
+function hideTyping() { const t = document.getElementById("typing"); if (t) t.remove(); }
+
+function getBotReply(text) {
+  const q = text.toLowerCase();
+  const leaves = myLeaves();
+  const att = myAttendance();
+  const firstName = currentEmployee.name.split(" ")[0];
+
+  const getLeave = (type) => leaves.find(l => l.type && l.type.toLowerCase() === type.toLowerCase());
+  const remaining = (l) => l ? ((l.entitled||0) - (l.taken||0)) : null;
+
+  // ── CASUAL LEAVE BALANCE ──
+  if (q.match(/casual.*(leave|day|balance|remain|left|have|how many)/i) || q.match(/(how many|balance).*(casual)/i)) {
+    const l = getLeave("Casual");
+    if (l) {
+      const rem = remaining(l);
+      return `📋 *Casual Leave Balance*\n\nYou have used ${l.taken} out of ${l.entitled} casual leave days.\n✅ Remaining: ${rem} days\n\nRemember: Casual leave must be applied at least 24 hours in advance (1 day), 7 days in advance (2 days), or 1 month in advance (more than 2 days).`;
+    }
+    return "I couldn't find your casual leave balance. Please contact HR.";
+  }
+
+  // ── SICK LEAVE BALANCE ──
+  if (q.match(/sick.*(leave|day|balance|remain|left|have|how many)/i) || q.match(/(how many|balance).*(sick)/i)) {
+    const l = getLeave("Sick");
+    if (l) {
+      const rem = remaining(l);
+      return `🤒 *Sick Leave Balance*\n\nYou have used ${l.taken} out of ${l.entitled} sick leave days.\n✅ Remaining: ${rem} days\n\nNote: For 2 or more sick days, a medical certificate is required. If sick leave is exhausted, it deducts from casual leave.`;
+    }
+    return "I couldn't find your sick leave balance. Please contact HR.";
+  }
+
+  // ── WFH BALANCE ──
+  if (q.match(/wfh.*(day|balance|remain|left|have|how many)/i) || q.match(/(how many|balance).*(wfh|work from home)/i) || q.match(/work from home.*(balance|remaining|left|how many)/i)) {
+    const l = getLeave("WFH");
+    if (l) {
+      const rem = remaining(l);
+      return `🏠 *Work From Home Balance*\n\nYou have used ${l.taken} out of ${l.entitled} WFH days.\n✅ Remaining: ${rem} days\n\nRemember: WFH must be pre-approved by your line manager and HR at least 24 hours in advance.`;
+    }
+    return "I couldn't find your WFH balance. Please contact HR.";
+  }
+
+  // ── ALL LEAVE BALANCE ──
+  if (q.match(/(all|my).*(leave|balance)/i) || q.match(/(leave|balance).*(all|total|summary)/i) || q.match(/how many leaves/i)) {
+    const casual = getLeave("Casual");
+    const sick = getLeave("Sick");
+    const wfh = getLeave("WFH");
+    return `📊 *Your Leave Summary, ${firstName}*\n\n🗓 Casual: ${remaining(casual)} remaining (${casual?.taken||0} used of ${casual?.entitled||0})\n🤒 Sick: ${remaining(sick)} remaining (${sick?.taken||0} used of ${sick?.entitled||0})\n🏠 WFH: ${remaining(wfh)} remaining (${wfh?.taken||0} used of ${wfh?.entitled||0})`;
+  }
+
+  // ── LATE ARRIVALS ──
+  if (q.match(/late.*(arrival|count|times|how many|this month)/i) || q.match(/how many times.*(late)/i) || q.match(/my attendance/i)) {
+    const lateRows = att.filter(a => (a.lateCount||0) > 0);
+    const currentMonth = lateRows.length > 0 ? lateRows[lateRows.length-1] : null;
+    const count = currentMonth ? (currentMonth.lateCount||0) : 0;
+    const warn = count >= 3 ? "\n\n⚠️ Warning: You have reached 3 or more late arrivals. A half-day salary deduction may apply as per company policy." : count === 2 ? "\n\n⚠️ Note: You have 2 late arrivals. One more will trigger a salary deduction." : "";
+    return `🕘 *Late Arrivals This Month*\n\nYou have ${count} late arrival(s) recorded this month.${warn}\n\nPolicy: More than 3 late arrivals in a month results in a half-day salary deduction.`;
+  }
+
+  // ── LATE ARRIVAL POLICY ──
+  if (q.match(/late.*(policy|rule|happen|what if|deduct)/i) || q.match(/what happen.*(late|3 time)/i) || q.match(/3 late/i) || q.match(/salary deduct/i)) {
+    return `🕘 *Late Arrival Policy*\n\n• Office flexible hours: 9:30 AM – 11:00 AM start\n• End time: 6:30 PM – 8:00 PM\n• Late sitting beyond 8:30 PM requires Team Lead + HR approval\n• If you exceed 3 late arrivals in a month → half-day salary deduction\n• Employees must inform HR and Team Lead in case of any delay\n• You must make up for lost time by working extra hours`;
+  }
+
+  // ── HOW TO APPLY LEAVE ──
+  if (q.match(/how.*(apply|request|submit|get).*(leave|casual|sick)/i) || q.match(/apply.*(leave)/i) || q.match(/leave.*(apply|request|form)/i)) {
+    return `📝 *How to Apply for Leave*\n\n1. Fill the Leave Application Form (LAF)\n2. Submit to your line manager for approval\n3. Timing rules:\n   • 1 day leave → apply 24 hours in advance\n   • 2 days leave → apply 7 days in advance\n   • More than 2 days → apply 1 month in advance\n4. On-day (unplanned) leaves: max 5 allowed per year\n\n⚠️ If you don't submit the form in advance, it will be treated as Leave Without Pay.`;
+  }
+
+  // ── WFH POLICY ──
+  if (q.match(/wfh.*(policy|rule|how|apply|request)/i) || q.match(/work from home.*(policy|rule|how|apply)/i) || q.match(/can i.*(wfh|work from home)/i)) {
+    return `🏠 *Work From Home Policy*\n\n• All employees get 10 WFH days per year\n• Must be pre-approved by line manager and HR\n• Apply at least 24 hours in advance\n• 2 or more WFH days → apply 7 days in advance\n• Cannot be combined with other leaves or holidays\n• Must work same hours as office (9:30 AM – 6:30 PM)\n• Must clock in/out via Microsoft Teams WFH group\n• Reliable internet, electricity backup, and quiet workspace required\n• Remote employees may be asked to send workspace photo`;
+  }
+
+  // ── SICK LEAVE POLICY ──
+  if (q.match(/sick.*(policy|rule|certificate|medical|how)/i) || q.match(/medical certificate/i)) {
+    return `🤒 *Sick Leave Policy*\n\n• Entitled to 5 sick leave days per year\n• For 1 day: inform HR and Team Lead immediately\n• For 2 or more days: medical certificate required\n• Submit sick leave form on first working day after leave\n• If sick leave exhausted → deducted from casual leave\n• If both exhausted → Leave Without Pay\n• Serious illness exceptions approved by MD only`;
+  }
+
+  // ── CASUAL LEAVE POLICY ──
+  if (q.match(/casual.*(policy|rule|how|apply)/i)) {
+    return `📋 *Casual Leave Policy*\n\n• Entitled to 15 casual leave days per year\n• 5 of these can be unplanned (same-day) requests\n• After 5 unplanned leaves, same-day requests = Leave Without Pay\n• Cannot be combined with other leaves or adjoining holidays\n• No carry forward — all unused leaves lapse at year end\n• Advance notice required:\n  → 1 day: 24 hours notice\n  → 2 days: 7 days notice\n  → More than 2 days: 1 month notice`;
+  }
+
+  // ── HEALTH INSURANCE ──
+  if (q.match(/health|insurance|medical|adamjee|ipd|coverage/i)) {
+    return `🏥 *Health Insurance Policy*\n\n• Provider: Adamjee Insurance\n• Coverage: In-Patient Department (IPD)\n• Available to all confirmed employees\n• Coverage starts from date of employment confirmation\n\nCategories based on service:\n• Category A: 5+ years of service\n• Category B: 3+ years of service\n• Category C: Less than 3 years\n\n• Maternity coverage: available after 2 years of service\n• Benefits subject to Adamjee Insurance terms`;
+  }
+
+  // ── PERFORMANCE BONUS ──
+  if (q.match(/bonus|performance bonus|increment/i)) {
+    return `💰 *Performance Bonus Policy*\n\n• All employees get 5% of monthly salary as performance bonus\n• Starts after completing probation period\n\nWithdrawal schedule:\n• After 13 months → withdraw 50% of accumulated bonus\n• After 25 months → withdraw 100% of accumulated bonus\n• Withdrawn annually on your joining anniversary\n\n• Monthly performance meetings evaluate your contribution\n• Subpar performance may reduce your bonus percentage\n• If you leave before your anniversary → bonus for that year is forfeited`;
+  }
+
+  // ── CODE OF CONDUCT ──
+  if (q.match(/conduct|behavior|ethics|harassment|discipline|policy/i)) {
+    return `📜 *Code of Conduct*\n\n• Always behave professionally and respectfully\n• Zero tolerance for discrimination and harassment\n• No non-work activities during office hours (movies, personal calls)\n• Maintain confidentiality of company information\n• Avoid conflicts of interest\n• Take ownership of your work and responsibilities\n• Report unethical behavior to HR immediately\n• Violations may result in disciplinary action or termination`;
+  }
+
+  // ── PROBATION ──
+  if (q.match(/probation/i)) {
+    return `⏳ *Probation Policy*\n\n• New employees serve a probation period\n• Performance bonus starts after completing probation\n• WFH is not available during probation\n• Performance is reviewed during this period\n\nFor more details, please contact HR.`;
+  }
+
+  // ── LUNCH / BREAK ──
+  if (q.match(/lunch|break|timing|office hour/i)) {
+    return `⏰ *Office Hours & Lunch*\n\n• Flexible start: 9:30 AM – 11:00 AM\n• Flexible end: 6:30 PM – 8:00 PM\n• Lunch: 1:15 PM – 2:15 PM (Mon–Thu)\n• Lunch: 1:15 PM – 2:45 PM (Friday)\n• No extended breaks — breaks are not compensated\n• Late sitting beyond 8:30 PM needs Team Lead + HR approval`;
+  }
+
+  // ── GREETING ──
+  if (q.match(/^(hi|hello|hey|salam|assalam|good morning|good afternoon)/i)) {
+    return `Hi ${firstName}! 👋 How can I help you today?\n\nYou can ask me about:\n• Your leave balance (casual, sick, WFH)\n• Late arrival policy\n• How to apply for leave\n• Health insurance\n• Performance bonus\n• Office timings`;
+  }
+
+  // ── CONTACT HR ──
+  if (q.match(/contact hr|hr number|hr email|speak to hr/i)) {
+    return `📞 *Contact HR*\n\nFor any queries not answered here, please reach out to the HR department directly.\n\n🏢 PeopleTek (Pvt.) Ltd / TekFirst Ltd\n📍 Office No. 32, Upper Ground, Park Lane Tower, Lahore Cantt\n📞 042-36622277`;
+  }
+
+  // ── DEFAULT ──
+  return `I'm not sure about that specific question, ${firstName}. 🤔\n\nI can help you with:\n• Leave balance (casual, sick, WFH)\n• Late arrival policy & count\n• How to apply for leave or WFH\n• Health insurance\n• Performance bonus\n• Office timings & lunch hours\n• Code of conduct\n\nOr contact HR directly at 042-36622277 for anything else!`;
+}
+
+function sendMessage() {
+  const input = document.getElementById("chatInput");
+  const btn   = document.getElementById("chatSendBtn");
+  const text  = input.value.trim();
+  if (!text) return;
+
+  addUserMsg(text);
+  input.value = "";
+  btn.disabled = true;
+  showTyping();
+
+  setTimeout(() => {
+    hideTyping();
+    const reply = getBotReply(text);
+    addBotMsg(reply);
+    btn.disabled = false;
+    input.focus();
+  }, 600);
+}
+</script>
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">HR</div>
+    <h1>Employee HR Portal</h1>
+    <p>Sign in with your Employee ID and PIN</p>
+    <div class="form-group">
+      <label>Employee ID</label>
+      <input type="text" id="loginId" placeholder="e.g. E001" onkeydown="if(event.key==='Enter')handleLogin()" />
+    </div>
+    <div class="form-group">
+      <label>PIN</label>
+      <input type="password" id="loginPin" placeholder="4-digit PIN" maxlength="4" onkeydown="if(event.key==='Enter')handleLogin()" />
+    </div>
+    <button class="btn-primary" id="loginBtn" onclick="handleLogin()">Sign In</button>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-hint">
+      <strong>Sample logins to try:</strong><br>
+      E001 / 1234 &nbsp;·&nbsp; E002 / 2345 &nbsp;·&nbsp; E003 / 3456
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ PORTAL ══════════════ -->
+<div id="portalScreen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">HR</div>
+      <span class="topbar-title">HR Portal</span>
+    </div>
+    <div class="topbar-right">
+      <span class="emp-pill" id="empPill"></span>
+      <button class="logout-btn" onclick="logout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn" data-tab="dashboard"  onclick="showTab('dashboard')">Dashboard</button>
+    <button class="nav-btn" data-tab="leaves"     onclick="showTab('leaves')">Leave Balance</button>
+    <button class="nav-btn" data-tab="attendance" onclick="showTab('attendance')">Late Arrivals</button>
+    <button class="nav-btn" data-tab="policies"   onclick="showTab('policies')">HR Policies</button>
+    <button class="nav-btn" data-tab="chat"       onclick="showTab('chat')">Ask HR Bot</button>
+  </div>
+
+  <div class="content">
+
+    <div id="tab-dashboard" class="tab-panel" style="display:none;">
+      <div id="dashStats" class="stats-grid"></div>
+      <div id="dashContent"></div>
+    </div>
+
+    <div id="tab-leaves" class="tab-panel" style="display:none;">
+      <div id="leavesContent"></div>
+    </div>
+
+    <div id="tab-attendance" class="tab-panel" style="display:none;">
+      <div id="attendanceContent"></div>
+    </div>
+
+    <div id="tab-policies" class="tab-panel" style="display:none;">
+      <div id="policiesContent"></div>
+    </div>
+
+    <div id="tab-chat" class="tab-panel" style="display:none;">
+      <div class="quick-questions" id="quickQs"></div>
+      <br>
+      <div class="chat-container">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-area">
+          <input type="text" id="chatInput" placeholder="Ask about policies, leaves, attendance…" onkeydown="if(event.key==='Enter')sendMessage()" />
+          <button class="chat-send-btn" id="chatSendBtn" onclick="sendMessage()">Send</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!--
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SETUP INSTRUCTIONS — READ BEFORE DEPLOYING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STEP 1: CREATE YOUR GOOGLE SHEET
+  Create a Google Sheet with 4 tabs named exactly:
+  - Employees   (columns: ID, Name, Department, Joined, PIN)
+  - Leaves      (columns: EmployeeID, Type, Entitled, Taken, IsHistory, From, To, Days, Status)
+  - Attendance  (columns: EmployeeID, Date, CheckIn, Delay, Note)
+  - Policies    (columns: Name, Category, Content)
+
+STEP 2: PUBLISH THE SHEET
+  File → Share → Publish to web
+  For each tab: select the tab → CSV → Publish
+  Copy the 4 URLs
+
+STEP 3: PASTE URLs IN THIS FILE
+  Find SHEETS_CONFIG at the top of the script and replace:
+  "YOUR_EMPLOYEES_SHEET_CSV_URL"  → paste Employees tab URL
+  "YOUR_LEAVES_SHEET_CSV_URL"     → paste Leaves tab URL
+  "YOUR_ATTENDANCE_SHEET_CSV_URL" → paste Attendance tab URL
+  "YOUR_POLICIES_SHEET_CSV_URL"   → paste Policies tab URL
+
+STEP 4: ADD ANTHROPIC API KEY
+  Get your key from console.anthropic.com
+  Replace "YOUR_ANTHROPIC_API_KEY" with your key
+  NOTE: For a real deployment, move the API key to a backend
+  so it is not visible in the browser.
+
+STEP 5: DEPLOY TO VERCEL (FREE)
+  1. Go to vercel.com and create a free account
+  2. Click "Add New Project" → "Deploy from file"
+  3. Drag and drop this HTML file
+  4. Click Deploy — you get a live URL instantly!
+  5. Share the URL with your employees
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-->
+</body>
+</html>
