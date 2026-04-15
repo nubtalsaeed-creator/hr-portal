@@ -239,10 +239,7 @@ const usingSheets = () => SHEETS_CONFIG.employees !== "YOUR_EMPLOYEES_SHEET_CSV_
 // ══════════════════════════════════════════════════════════════
 // GOOGLE SHEETS CSV PARSER
 // ══════════════════════════════════════════════════════════════
-async function fetchCSV(url) {
-  const proxy = "https://api.allorigins.win/raw?url=";
-  const res = await fetch(proxy + encodeURIComponent(url));
-  const text = await res.text();
+function parseCSV(text) {
   const lines = text.trim().split("\n");
   const headers = lines[0].split(",").map(h => h.trim().replace(/"/g, "").replace(/\r/g, ""));
   return lines.slice(1).filter(l => l.trim()).map(line => {
@@ -251,6 +248,32 @@ async function fetchCSV(url) {
     headers.forEach((h, i) => obj[h] = vals[i] || "");
     return obj;
   });
+}
+
+async function fetchCSV(url) {
+  const proxies = [
+    "https://corsproxy.io/?",
+    "https://api.allorigins.win/raw?url=",
+    "https://cors-anywhere.herokuapp.com/"
+  ];
+  for (const proxy of proxies) {
+    try {
+      const fetchUrl = proxy === "https://corsproxy.io/?" 
+        ? proxy + encodeURIComponent(url)
+        : proxy + encodeURIComponent(url);
+      const res = await fetch(fetchUrl, { signal: AbortSignal.timeout(8000) });
+      if (res.ok) {
+        const text = await res.text();
+        if (text && text.length > 10 && !text.includes("<html")) {
+          console.log("Loaded via proxy:", proxy);
+          return parseCSV(text);
+        }
+      }
+    } catch(e) {
+      console.warn("Proxy failed:", proxy, e.message);
+    }
+  }
+  throw new Error("All proxies failed");
 }
 
 async function loadData() {
